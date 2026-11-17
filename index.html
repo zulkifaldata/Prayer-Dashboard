@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>نماز کے اوقات – لاہور</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Barlow+Condensed:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06201a; --panel:#0c2e26; --line:#1d4a3e;
+  --ivory:#f3ebd7; --muted:#9db8ad; --brass:#e0b95c; --alert:#ffd77a; --red:#ff3b3b; --gy:#c9e23c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ivory);overflow:hidden;
+  font-family:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq",serif}
+.num{font-family:"Barlow Condensed","Arial Narrow",sans-serif;direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
+#app{height:100%;display:grid;grid-template-rows:42% 1fr;gap:2vh;padding:3vh 3vw}
+.top{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:3vw;align-items:center}
+.clockbox{text-align:center}
+#clock{font-size:min(19vh,13vw);font-weight:700;line-height:1;letter-spacing:.01em}
+#clock small{font-size:.4em;color:var(--brass);margin-inline-start:.15em}
+#next{margin-top:1vh;font-size:min(3.6vh,2.6vw);color:var(--gy);line-height:1.9}
+#count{font-size:min(8vh,6vw);font-weight:500;color:var(--ivory);line-height:1}
+.dates{text-align:center;line-height:2.1;font-size:min(3.4vh,2.4vw);color:var(--gy)}
+.dates .hijri{color:var(--gy);font-size:min(4.2vh,3vw)}
+.weather{text-align:center}
+#temp{font-size:min(14vh,9vw);font-weight:700;line-height:1}
+#wdesc{font-size:min(3.4vh,2.4vw);line-height:2.1;color:var(--muted)}
+#wmeta{font-size:min(3vh,2vw);color:var(--muted)}
+.prayers{display:grid;grid-template-columns:repeat(5,1fr);gap:1.4vw;min-height:0}
+.p{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:10px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1vh;transition:background .4s,border-color .4s}
+.p .n{font-size:min(6vh,4.4vw);line-height:1.9;color:var(--gy)}
+.p .t{font-size:min(14vh,9vw);font-weight:700;line-height:1;color:var(--red)}
+.p .t small{font-size:.38em;color:var(--red);opacity:.75;margin-inline-start:.2em}
+.p.cur{border-color:var(--gy);background:#10332a}
+.p.cur .t,.p.cur .t small{color:var(--gy);opacity:1}
+.dot{display:none;position:absolute;top:2vh;inset-inline-start:2vh;width:2.4vh;height:2.4vh;border-radius:50%;background:var(--red);box-shadow:0 0 1.6vh var(--red)}
+.p.cur .dot{display:block}
+.p.now .dot{animation:blink .8s ease-in-out infinite alternate}
+@keyframes blink{from{opacity:1}to{opacity:.15}}
+#gear{position:fixed;bottom:1.5vh;inset-inline-start:1.5vw;background:none;border:0;color:#5f8277;font-size:3.6vh;cursor:pointer;opacity:.5;z-index:5}
+#panel{position:fixed;inset:0;background:rgba(3,14,11,.98);z-index:20;overflow:auto;padding:3vh 5vw}
+#panel[hidden]{display:none}
+#panel h2{font-size:4.6vh;line-height:2;color:var(--gy)}
+#panel .hint{font-size:2.6vh;line-height:2;color:var(--muted)}
+#panel .row{display:grid;grid-template-columns:1fr auto auto;gap:3vw;align-items:center;margin:1.2vh 0;font-size:4vh}
+#panel .step{display:flex;gap:1.5vw;align-items:center;direction:ltr}
+#panel .step b{min-width:5vh;text-align:center;color:var(--ivory);font-size:5vh}
+#panel button{font:inherit;font-size:3.6vh;padding:.6vh 2vw;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--ivory);cursor:pointer}
+#panel input[type=time]{font-size:3.6vh;padding:.6vh 1vw;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--ivory);direction:ltr}
+#panel .actions{display:flex;gap:2vw;margin-top:3vh}
+#panel #save{background:var(--gy);color:#142000;border-color:var(--gy)}
+.foot{position:fixed;bottom:.8vh;inset-inline:0;text-align:center;font-size:1.6vh;color:#5f8277;direction:ltr}
+#start{position:fixed;inset:0;background:rgba(6,32,26,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3vh;z-index:10;cursor:pointer;text-align:center}
+#start b{font-size:6vh;line-height:2;color:var(--brass)}
+#start span{font-size:3.4vh;line-height:2}
+@media (prefers-reduced-motion:reduce){.p.now .dot{animation:none}}
+@media (orientation:portrait){#app{grid-template-rows:auto 1fr}.top{grid-template-columns:1fr}.prayers{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="start"><b>نماز کے اوقات – لاہور</b><span>شروع کرنے کے لیے اسکرین کو ایک بار چھوئیں<br>(اذان کی آواز کے لیے ضروری ہے)</span></div>
+
+<div id="app">
+  <div class="top">
+    <div class="weather">
+      <div id="temp" class="num">--°</div>
+      <div id="wdesc">موسم لوڈ ہو رہا ہے…</div>
+      <div id="wmeta" class="num"></div>
+    </div>
+    <div class="clockbox">
+      <div id="clock" class="num">--:--<small>:--</small></div>
+      <div id="next">اگلی نماز</div>
+      <div id="count" class="num">--:--:--</div>
+    </div>
+    <div class="dates">
+      <div id="greg"></div>
+      <div id="hijri" class="hijri"></div>
+    </div>
+  </div>
+  <div class="prayers" id="prayers"></div>
+</div>
+<div class="foot">Lahore · Hanafi · University of Islamic Sciences, Karachi · Aladhan &amp; Open-Meteo</div>
+
+<button id="gear" aria-label="settings">⚙</button>
+<div id="panel" hidden></div>
+<audio id="azan" src="azan.mp3" preload="auto"></audio>
+
+<script>
+const PR=[["Fajr","فجر"],["Dhuhr","ظہر"],["Asr","عصر"],["Maghrib","مغرب"],["Isha","عشاء"]];
+const TZ="Asia/Karachi";
+let cfg={off:{},man:{},hj:0};try{cfg=Object.assign(cfg,JSON.parse(localStorage.getItem('cfg')||'{}'))}catch(e){}
+let timings=null, hijri=null, played={}, lastFetchDay="";
+
+// ---- helpers
+const pad=n=>String(n).padStart(2,"0");
+function nowPK(){ // current time in Lahore regardless of tablet timezone
+  const p=new Intl.DateTimeFormat("en-GB",{timeZone:TZ,hour12:false,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}).formatToParts(new Date());
+  const o={};p.forEach(x=>o[x.type]=x.value);
+  return {y:+o.year,mo:+o.month,d:+o.day,h:+o.hour%24,mi:+o.minute,s:+o.second,key:`${o.year}-${o.month}-${o.day}`};
+}
+const h12=h=>({h:((h+11)%12)+1,ap:h<12?"AM":"PM"});
+function secOf(t){const[a,b]=t.split(":");return +a*3600+ +b*60}
+function prSec(k){
+  if(cfg.man[k])return secOf(cfg.man[k]);
+  if(!timings)return null;
+  return secOf(timings[k].split(" ")[0])+60*(+cfg.off[k]||0);
+}
+
+// ---- build prayer cards
+const wrap=document.getElementById("prayers");
+PR.forEach(([k,u])=>{
+  const d=document.createElement("div");d.className="p";d.id="p-"+k;
+  d.innerHTML=`<span class="dot"></span><div class="n">${u}</div><div class="t num">--:--</div>`;wrap.appendChild(d);
+});
+
+// ---- prayer times (Aladhan): method 1 = Univ. of Islamic Sciences Karachi, school 1 = Hanafi
+async function loadTimings(key){
+  const [y,m,d]=key.split("-");
+  const url=`https://api.aladhan.com/v1/timingsByCity/${d}-${m}-${y}?city=Lahore&country=Pakistan&method=1&school=1&adjustment=${cfg.hj||0}`;
+  try{
+    const r=await fetch(url);const j=await r.json();
+    if(j.code===200){
+      timings=j.data.timings;hijri=j.data.date.hijri;
+      localStorage.setItem("pt",JSON.stringify({key,timings,hijri}));
+    }
+  }catch(e){
+    try{const c=JSON.parse(localStorage.getItem("pt")||"null");if(c){timings=c.timings;hijri=c.hijri}}catch(_){}
+  }
+  lastFetchDay=key;renderTimes();
+}
+function renderTimes(){
+  PR.forEach(([k])=>{
+    const s=prSec(k);if(s===null)return;
+    const h=Math.floor(s/3600)%24,m=Math.floor(s%3600/60);
+    const x=h12(h);
+    document.querySelector(`#p-${k} .t`).innerHTML=`${x.h}:${pad(m)}<small>${x.ap}</small>`;
+  });
+  if(hijri){
+    document.getElementById("hijri").textContent=`${hijri.day} ${hijri.month.ar} ${hijri.year} ہجری`;
+  }
+}
+
+// ---- weather (Open-Meteo)
+const WC={0:"صاف آسمان",1:"زیادہ تر صاف",2:"جزوی ابر آلود",3:"ابر آلود",45:"دھند",48:"دھند",51:"ہلکی پھوار",53:"پھوار",55:"گھنی پھوار",
+61:"ہلکی بارش",63:"بارش",65:"تیز بارش",80:"بارش کے چھینٹے",81:"بارش",82:"موسلا دھار بارش",95:"گرج چمک",96:"گرج کے ساتھ اولے",99:"گرج کے ساتھ اولے"};
+async function loadWeather(){
+  try{
+    const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=31.5497&longitude=74.3436&current=temperature_2m,relative_humidity_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FKarachi&forecast_days=1");
+    const j=await r.json(),c=j.current;
+    document.getElementById("temp").textContent=Math.round(c.temperature_2m)+"°C";
+    document.getElementById("wdesc").textContent=WC[c.weather_code]||"موسم";
+    document.getElementById("wmeta").textContent=`${Math.round(j.daily.temperature_2m_min[0])}° – ${Math.round(j.daily.temperature_2m_max[0])}°   ·   ${c.relative_humidity_2m}%`;
+  }catch(e){document.getElementById("wdesc").textContent="موسم دستیاب نہیں"}
+}
+
+// ---- main tick (every second)
+function tick(){
+  const n=nowPK(), x=h12(n.h);
+  document.getElementById("clock").innerHTML=`${x.h}:${pad(n.mi)}<small>:${pad(n.s)} ${x.ap}</small>`;
+  document.getElementById("greg").textContent=new Intl.DateTimeFormat("ur-PK",{timeZone:TZ,weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
+  if(n.key!==lastFetchDay){played={};loadTimings(n.key)}
+  const S={};for(const[k]of PR){S[k]=prSec(k);if(S[k]===null)return}
+  const cur=n.h*3600+n.mi*60+n.s;
+  let nextK=null,nextS=0,curK=null;
+  for(const[k]of PR){if(S[k]>cur){nextK=k;nextS=S[k];break}curK=k}
+  if(!nextK){nextK="Fajr";nextS=S.Fajr+86400}
+  curK=curK||"Isha";
+
+  PR.forEach(([k])=>{
+    const el=document.getElementById("p-"+k);
+    el.classList.toggle("cur",k===curK);
+    el.classList.toggle("now",k===curK&&cur>=S[k]&&cur<S[k]+120);
+    if(cur>=S[k]&&cur<S[k]+60&&!played[k]){played[k]=1;playAzan()}
+  });
+  const un=PR.find(p=>p[0]===nextK)[1];
+  document.getElementById("next").textContent=`اگلی نماز: ${un}`;
+  let d=nextS-cur;
+  document.getElementById("count").textContent=`${pad(Math.floor(d/3600))}:${pad(Math.floor(d%3600/60))}:${pad(d%60)}`;
+}
+
+// ---- azan + keep screen awake
+const azan=document.getElementById("azan");
+function playAzan(){azan.currentTime=0;azan.play().catch(()=>{})}
+let lock=null;
+async function keepAwake(){try{if("wakeLock"in navigator)lock=await navigator.wakeLock.request("screen")}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")keepAwake()});
+document.getElementById("start").addEventListener("click",()=>{
+  document.getElementById("start").remove();
+  azan.muted=true;azan.play().then(()=>{azan.pause();azan.muted=false;azan.currentTime=0}).catch(()=>{azan.muted=false});
+  keepAwake();
+  const el=document.documentElement;(el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);
+});
+
+// ---- settings panel (minute adjustment / manual time)
+const panel=document.getElementById("panel");let draft=null;
+function openPanel(){
+  draft=JSON.parse(JSON.stringify(cfg));
+  let h=`<h2>ترتیبات – وقت میں ردوبدل</h2><p class="hint">منٹ کم یا زیادہ کریں۔ اگر ہاتھ سے وقت لکھیں گے تو وہ انٹرنیٹ کے وقت پر غالب ہوگا۔ ہاتھ والا وقت ہٹانے کے لیے خانہ خالی کریں۔</p>`;
+  PR.forEach(([k,u])=>{
+    h+=`<div class="row"><span>${u}</span><span class="step"><button data-k="${k}" data-d="-1">−</button><b class="num" id="o-${k}">${draft.off[k]||0}</b><button data-k="${k}" data-d="1">+</button></span><input type="time" id="m-${k}" value="${draft.man[k]||""}"></div>`;
+  });
+  h+=`<div class="row"><span>ہجری تاریخ (دن)</span><span class="step"><button data-k="hj" data-d="-1">−</button><b class="num" id="o-hj">${draft.hj||0}</b><button data-k="hj" data-d="1">+</button></span><span></span></div>`;
+  h+=`<div class="actions"><button id="save">محفوظ کریں</button><button id="close">بند کریں</button></div>`;
+  panel.innerHTML=h;panel.hidden=false;
+}
+panel.addEventListener("click",e=>{
+  const t=e.target;
+  if(t.id==="close"){panel.hidden=true;return}
+  if(t.id==="save"){
+    PR.forEach(([k])=>{draft.man[k]=document.getElementById("m-"+k).value||""});
+    cfg=draft;localStorage.setItem("cfg",JSON.stringify(cfg));
+    panel.hidden=true;renderTimes();loadTimings(nowPK().key);return;
+  }
+  if(t.dataset&&t.dataset.k){
+    const k=t.dataset.k,d=+t.dataset.d;
+    if(k==="hj"){draft.hj=Math.max(-2,Math.min(2,(draft.hj||0)+d));document.getElementById("o-hj").textContent=draft.hj}
+    else{draft.off[k]=Math.max(-30,Math.min(30,(draft.off[k]||0)+d));document.getElementById("o-"+k).textContent=draft.off[k]}
+  }
+});
+document.getElementById("gear").addEventListener("click",openPanel);
+
+// ---- go
+tick();setInterval(tick,1000);
+loadWeather();setInterval(loadWeather,15*60*1000);
+</script>
+</body>
+</html>
